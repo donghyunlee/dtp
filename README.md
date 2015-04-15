@@ -1,1 +1,1 @@
-# difference target propagation - ECML submission code
+# Difference Target Propagation - ECML submission code
