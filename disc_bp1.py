@@ -4,10 +4,12 @@ import numpy as np
 from util import *
 
 # load MNIST data into shared variables
-(train_x, train_y), (valid_x, valid_y), (test_x, test_y) = np.load('/home/dhlee/ML/dataset/mnist/mnist.pkl')
+(train_x, train_y), (valid_x, valid_y), (test_x, test_y) = \
+        np.load('mnist.pkl')
 
 train_x, train_y, valid_x, valid_y, test_x, test_y = \
-    sharedX(train_x), sharedX(train_y), sharedX(valid_x), sharedX(valid_y), sharedX(test_x),  sharedX(test_y)
+    sharedX(train_x), sharedX(train_y), sharedX(valid_x), \
+    sharedX(valid_y), sharedX(test_x),  sharedX(test_y)
 
 
 def exp(__lr) :
@@ -35,7 +37,7 @@ def exp(__lr) :
     H1 = F1(X); H2 = F2(H1); P = F3(H2)
 
     # cost and error
-    cost = negative_log_likelihood( P, Y )
+    cost = NLL( P, Y )
     #cost_disc = negative_log_likelihood( F3(F2(sign(F1(X)))), Y )
     #err  = error( predict( F3(F2(sign(F1(X)))) ), Y )
     err  = error( predict( F3(F2(F1(X))) ), Y )
@@ -55,19 +57,16 @@ def exp(__lr) :
             { W1 : g_W1, B1 : g_B1, W2 : g_W2, B2 : g_B2, W3 : g_W3, B3 : g_B3 }, 
         __lr))
 
-    # make evaluation function for valid error
-    eval_valid = theano.function([i], [err],  on_unused_input='ignore',
-        givens={    X : valid_x[ i*5000 : (i+1)*5000 ],  
-                    Y : valid_y[ i*5000 : (i+1)*5000 ] }  )
+    # evaluation
+    eval_valid = theano.function([], [err],  on_unused_input='ignore',
+        givens={ X : valid_x, Y : valid_y }  )
 
-    # make evaluation function for test error
-    eval_test = theano.function([i], [err], on_unused_input='ignore',
-        givens={    X : test_x[ i*5000 : (i+1)*5000 ],  
-                    Y : test_y[ i*5000 : (i+1)*5000 ] }  )
+    eval_test = theano.function([], [err], on_unused_input='ignore',
+        givens={ X : test_x, Y : test_y }  )
 
     print
     print __lr
-
+    print 'epoch cost train_err valid_err test_err time(sec)'
 
     # training loop
     t = time.time()
@@ -81,13 +80,12 @@ def exp(__lr) :
     for e in range(1,max_epochs+1) :
         monitor['train'].append(  np.array([ train_ff(i) for i in range(n_batches) ]).mean(axis=0)  )
 
-        if e % 50 == 0 :
-            monitor['valid'].append( np.array([ eval_valid(i) for i in range(2) ]).mean(axis=0)  )
-            monitor['test' ].append( np.array([ eval_test(i)  for i in range(2) ]).mean(axis=0)  )
+        if e % 10 == 0 :
+            monitor['valid'].append( eval_valid() )
+            monitor['test' ].append( eval_test()  )
             print e, monitor['train'][-1][0], monitor['train'][-1][1], monitor['valid'][-1][0], monitor['test'][-1][0], time.time() - t
 
 
-#exp(0.001)
 for i in range(5) : exp(0.00254964515659)
 
 #for i in range(100) :
